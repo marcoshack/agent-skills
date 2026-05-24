@@ -1,0 +1,9 @@
+{
+  "name": "marcoshack",
+  "version": "0.1.0",
+  "description": "Personal collection of Claude Code skills: commit, code-review, security-scan, implement.",
+  "author": {
+    "name": "Marcos Hack",
+    "email": "marcoshack@gmail.com"
+  }
+}

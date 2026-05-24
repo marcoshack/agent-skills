@@ -1,0 +1,15 @@
+{
+  "name": "marcoshack-marketplace",
+  "owner": {
+    "name": "Marcos Hack",
+    "email": "marcoshack@gmail.com"
+  },
+  "description": "Marcos Hack's personal Claude Code plugins.",
+  "plugins": [
+    {
+      "name": "marcoshack",
+      "source": "./plugins/marcoshack",
+      "description": "Personal skills collection: commit, code-review, security-scan, implement."
+    }
+  ]
+}

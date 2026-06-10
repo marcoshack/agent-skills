@@ -1,6 +1,6 @@
 {
   "name": "marcoshack",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Personal collection of Claude Code skills: commit, code-review, security-scan, implement.",
   "author": {
     "name": "Marcos Hack",

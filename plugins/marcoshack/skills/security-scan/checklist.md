@@ -1,5 +1,9 @@
 # Security Scanning Checklist
 
+Part A is the secret-detection pattern reference. Part B is the control-inventory checklist — controls that must be verified to EXIST (grep cannot find an absence; check each one deliberately).
+
+# Part A: Secrets Detection
+
 ## Secrets Detection Patterns
 
 ### API Keys and Authentication Tokens
@@ -167,3 +171,61 @@ If secrets are found:
    - Add pre-commit hooks
    - Use secret scanning tools
    - Regular security audits
+
+---
+
+# Part B: Control Inventory (absence checks)
+
+For each item, verify the control exists. Skip items not applicable to the detected stack and note them as skipped in the report.
+
+## Authentication & Session Controls
+
+- [ ] Token revocation exists (logout invalidates server-side; `tokens_valid_after` or `jti` denylist)
+- [ ] Disabled/demoted users lose access before token expiry (per-request active check OR short TTL + refresh)
+- [ ] All credential types have parity (e.g. API keys re-check `IsActive` → JWTs must too)
+- [ ] OAuth `state` is a per-session nonce bound via cookie, exact-matched at callback (not just server-signed)
+- [ ] PKCE on public OAuth clients; exact redirect URI matching
+- [ ] Rate limiter on login/register/reset — keyed on a non-spoofable identity (trusted-proxy config for `X-Forwarded-For`)
+- [ ] Tokens never travel in URL query strings (watch SSE/EventSource, download links)
+- [ ] Frontend stores tokens in httpOnly cookies, or has documented XSS mitigations + short TTL + working refresh
+
+## Authorization Controls
+
+- [ ] Every resource-by-ID endpoint checks ownership/tenancy
+- [ ] Real-time topic/channel subscriptions are authorized per topic, not just per connection
+- [ ] Admin routes behind role middleware (not just in-handler checks)
+- [ ] Public/share endpoints minimize PII in their payloads
+
+## Availability / Worker Controls
+
+- [ ] Worker pools / queue consumers have panic-or-exception recovery (one poison task ≠ process crash)
+- [ ] Ack deadlines exceed worst-case task runtime (or tasks heartbeat)
+- [ ] Non-retryable errors are terminated + reported, not NAK-retried forever
+- [ ] Workers validate input bounds (max sizes/counts) even from trusted internal callers
+- [ ] CPU-bound work doesn't block async event loops / health endpoints
+- [ ] SSE/WebSocket hubs cap connections per user; channel close paths are idempotent
+- [ ] Background loops accept a context/stop channel
+- [ ] Auth hot-path DB columns (key hash, session lookups) are indexed
+
+## Supply Chain & CI/CD
+
+- [ ] Dependabot/Renovate covers every ecosystem (gomod, npm per workspace, pip/uv, docker, github-actions)
+- [ ] Lockfiles committed; CI uses frozen installs (`npm ci`, `uv sync --frozen`)
+- [ ] CVE scanning in CI (Trivy/grype/govulncheck/CodeQL) — grep workflows; zero hits = finding
+- [ ] Secret scanning on PRs (gitleaks/trufflehog or org-level)
+- [ ] SBOM generated for published images
+- [ ] Third-party actions pinned to 40-char SHAs (prioritize ones with `packages: write`/`contents: write`)
+- [ ] Workflow `permissions:` least-privilege; no `pull_request_target` + untrusted checkout
+
+## Containers & Infrastructure
+
+- [ ] Every Dockerfile final stage has a non-root `USER`
+- [ ] Base images digest-pinned; no `:latest` in Dockerfiles or compose
+- [ ] `.dockerignore` exists for every build context (check actual context paths in compose)
+- [ ] `HEALTHCHECK` in images; compose healthchecks for all services including workers
+- [ ] Compose hardening: `cap_drop: [ALL]`, `no-new-privileges`, `read_only` where feasible
+- [ ] Internal ports (DB, queue, health, metrics) not bound to `0.0.0.0`/host
+- [ ] Proxy serves CSP + HSTS + nosniff + frame protection on ALL locations (mind nginx `add_header` inheritance)
+- [ ] Proxy-layer rate limiting and body-size limits
+- [ ] systemd units: non-root `User=`, `NoNewPrivileges=`, `ProtectSystem=`, `PrivateTmp=`
+- [ ] Install/deploy scripts never echo secrets
